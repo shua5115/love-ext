@@ -1,0 +1,7 @@
+Love-Ext Author: Yehoshua Halle
+
+Contributing Library Authors:
+g3d: groverburger, DMClVG
+cpml: Colby Klein, Landon Manning
+hump.gamestate: Matthias Richter
+suit: Matthias Richter
