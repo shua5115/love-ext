@@ -9,4 +9,5 @@ without having to sift through as much documentation or reading as much backend 
 - Math helpers 🧮
 - Gamestate switching (modified hump.gamestate) 🐫
 - 3D rendering capability (modified g3d) 👀
+- Table serialization 💾
 - Lua Language Server Support (all included libraries have doc comments)
