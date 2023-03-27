@@ -5,6 +5,10 @@ local math = require "math"
 ---@class LoveExt.Math
 local math_ext = {}
 
+function math_ext.sign(n)
+    return (n < 0 and -1) or (n > 0 and 1) or 0
+end
+
 ---Linearly interpolates from a to b for t from 0 to 1.
 ---Does not clamp.
 ---@return number
