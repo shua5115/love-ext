@@ -1,5 +1,5 @@
 local ext = require "love_ext"
-local _ = require "love_ext.g3d.matrices"
+
 love.run = ext.run
 local testnames = {
     "input";

@@ -110,17 +110,20 @@ end
 
 -- recreate the camera's view matrix from its current values
 function camera.updateViewMatrix()
-    camera.viewMatrix:setViewMatrix(camera.position, camera.target, camera.up)
+    local eyex, eyey, eyez = unpack(camera.position)
+    local targetx, targety, targetz = unpack(camera.target)
+    local upx, upy, upz = unpack(camera.up)
+    matrix.setViewMatrix(camera.viewMatrix, eyex, eyey, eyez, targetx, targety, targetz, upx, upy, upz)
 end
 
 -- recreate the camera's projection matrix from its current values
 function camera.updateProjectionMatrix()
-    camera.projectionMatrix:setProjectionMatrix(camera.fov, camera.nearClip, camera.farClip, camera.aspectRatio)
+    matrix.setProjectionMatrix(camera.projectionMatrix, camera.fov, camera.nearClip, camera.farClip, camera.aspectRatio)
 end
 
 -- recreate the camera's orthographic projection matrix from its current values
 function camera.updateOrthographicMatrix(size)
-    camera.projectionMatrix:setOrthographicMatrix(camera.fov, size or 5, camera.nearClip, camera.farClip, camera.aspectRatio)
+    matrix.setOrthographicMatrix(camera.projectionMatrix, camera.fov, size or 5, camera.nearClip, camera.farClip, camera.aspectRatio)
 end
 
 -- simple first person camera movement with WASD, space and shift

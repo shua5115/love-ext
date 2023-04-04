@@ -55,11 +55,13 @@ g3d.model = require(path .. ".model")
 ---@type LoveExt.G3D.Camera
 g3d.camera = require(path .. ".camera")
 ---@type LoveExt.G3D.Collisions
-g3d.collisions = require(path .. ".collisions")
+g3d.collisions = require(path .. ".collisions") -- disabled because they are non-functional with my modifications
 ---@type function (path, uflip, vflip)
 g3d.loadObj = require(path .. ".objloader")
 ---@type LoveExt.G3D.Vectors
 g3d.vectors = require(path .. ".vectors")
+---@type LoveExt.G3D.Matrix
+g3d.matrices = require (path .. ".matrices")
 -- g3d.primitives = require(path .. ".primitives") -- primitives are opt-in because of the loading of .obj files
 
 g3d.default_texture = require(path .. ".default_texture")

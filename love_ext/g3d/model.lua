@@ -10,7 +10,7 @@ local collisions = require(parent_path .. "collisions")
 ---@type LoveExt.G3D.Vectors
 local vectors = require(parent_path .. "vectors")
 local camera = require(parent_path .. "camera")
-local shader = require(parent_path .. "shader")
+local default_shader = require(parent_path .. "shader")
 local default_texture = require(parent_path .. "default_texture")
 local vectorCrossProduct = vectors.crossProduct
 local vectorNormalize = vectors.normalize
@@ -30,7 +30,7 @@ model.vertexFormat = {
     {"VertexNormal", "float", 3},
     {"VertexColor", "byte", 4},
 }
-model.shader = shader
+model.default_shader = default_shader
 
 ---Creates a new Model with either a list of vertices or a .obj file.
 ---If you choose to create with a list of vertices, you should specify which
@@ -38,13 +38,11 @@ model.shader = shader
 ---@see love.MeshDrawMode
 ---@param verts table|string List of 3D vectors with which to create the mesh, or the name of a .obj file.
 ---@param texture (string|love.Image|love.Texture)?
----@param translation table? {x, y, z}
----@param rotation table? {x, y, z}
----@param scale table? {x, y, z}
 ---@param mode love.MeshDrawMode?
 ---@param usage love.SpriteBatchUsage?
+---@param cullMode love.CullMode?
 ---@return LoveExt.G3D.Model
-function model.new(verts, texture, translation, rotation, scale, mode, usage)
+function model.new(verts, texture, mode, usage, cullMode)
     ---@class LoveExt.G3D.Model
     local self = setmetatable({}, mt)
 
@@ -70,9 +68,7 @@ function model.new(verts, texture, translation, rotation, scale, mode, usage)
     usage = usage or "dynamic"
     self.mesh = love.graphics.newMesh(self.vertexFormat, self.verts, mode, usage)
     self.mesh:setTexture(self.texture)
-    self.matrix = newMatrix()
-    if type(scale) == "number" then scale = {scale, scale, scale} end
-    self:setTransform(translation or {0,0,0}, rotation or {0,0,0}, scale or {1,1,1})
+    self.cullMode = cullMode or "none"
     return self
 end
 
@@ -98,93 +94,94 @@ function model:makeNormals(isFlipped)
     self.mesh:setTexture(self.texture)
 end
 
----Update the model's matrix by changing these parameters.
----If a parameter is omitted, do not change.
----@param translation table? {x, y, z}
----@param rotation table? {x, y, z}
----@param scale table? {x, y, z}
-function model:setTransform(translation, rotation, scale)
-    self.translation = translation or self.translation
-    self.rotation = rotation or self.rotation
-    self.scale = scale or self.scale
-    self:updateMatrix()
-end
+-- -Update the model's matrix by changing these parameters.
+-- -If a parameter is omitted, do not change.
+-- -@param translation table? {x, y, z}
+-- -@param rotation table? {x, y, z}
+-- -@param scale table? {x, y, z}
+-- function model:setTransform(translation, rotation, scale)
+--     self.translation = translation or self.translation
+--     self.rotation = rotation or self.rotation
+--     self.scale = scale or self.scale
+--     self:updateMatrix()
+-- end
 
----Set the translation of a model.
----@param tx number
----@param ty number
----@param tz number
-function model:setTranslation(tx,ty,tz)
-    self.translation[1] = tx
-    self.translation[2] = ty
-    self.translation[3] = tz
-    self:updateMatrix()
-end
+-- ---Set the translation of a model.
+-- ---@param tx number
+-- ---@param ty number
+-- ---@param tz number
+-- function model:setTranslation(tx,ty,tz)
+--     self.translation[1] = tx
+--     self.translation[2] = ty
+--     self.translation[3] = tz
+--     self:updateMatrix()
+-- end
 
----Set the rotation of a model.
----@param rx number
----@param ry number
----@param rz number
-function model:setRotation(rx,ry,rz)
-    self.rotation[1] = rx
-    self.rotation[2] = ry
-    self.rotation[3] = rz
-    self.rotation[4] = nil
-    self:updateMatrix()
-end
+-- ---Set the rotation of a model.
+-- ---@param rx number
+-- ---@param ry number
+-- ---@param rz number
+-- function model:setRotation(rx,ry,rz)
+--     self.rotation[1] = rx
+--     self.rotation[2] = ry
+--     self.rotation[3] = rz
+--     self.rotation[4] = nil
+--     self:updateMatrix()
+-- end
 
----Set the rotation by rotating about an axis by angle radians.
----@param x number
----@param y number
----@param z number
----@param angle number
-function model:setAxisAngleRotation(x,y,z,angle)
-    x,y,z = vectorNormalize(x,y,z)
-    angle = angle / 2
+-- ---Set the rotation by rotating about an axis by angle radians.
+-- ---@param x number
+-- ---@param y number
+-- ---@param z number
+-- ---@param angle number
+-- function model:setAxisAngleRotation(x,y,z,angle)
+--     x,y,z = vectorNormalize(x,y,z)
+--     angle = angle / 2
+-- 
+--     self.rotation[1] = x * math.sin(angle)
+--     self.rotation[2] = y * math.sin(angle)
+--     self.rotation[3] = z * math.sin(angle)
+--     self.rotation[4] = math.cos(angle)
+-- 
+--     self:updateMatrix()
+-- end
 
-    self.rotation[1] = x * math.sin(angle)
-    self.rotation[2] = y * math.sin(angle)
-    self.rotation[3] = z * math.sin(angle)
-    self.rotation[4] = math.cos(angle)
+-- ---Set the model's rotation with a quaternion.
+-- ---@param x number
+-- ---@param y number
+-- ---@param z number
+-- ---@param w number
+-- function model:setQuaternionRotation(x,y,z,w)
+--     self.rotation[1] = x
+--     self.rotation[2] = y
+--     self.rotation[3] = z
+--     self.rotation[4] = w
+--     self:updateMatrix()
+-- end
 
-    self:updateMatrix()
-end
-
----Set the model's rotation with a quaternion.
----@param x number
----@param y number
----@param z number
----@param w number
-function model:setQuaternionRotation(x,y,z,w)
-    self.rotation[1] = x
-    self.rotation[2] = y
-    self.rotation[3] = z
-    self.rotation[4] = w
-    self:updateMatrix()
-end
-
----Set the scale of a model.
----@param sx number
----@param sy number
----@param sz number
-function model:setScale(sx,sy,sz)
-    self.scale[1] = sx
-    self.scale[2] = sy or sx
-    self.scale[3] = sz or sx
-    self:updateMatrix()
-end
+-- ---Set the scale of a model.
+-- ---@param sx number
+-- ---@param sy number
+-- ---@param sz number
+-- function model:setScale(sx,sy,sz)
+--     self.scale[1] = sx
+--     self.scale[2] = sy or sx
+--     self.scale[3] = sz or sx
+--     self:updateMatrix()
+-- end
 
 ---Update the model's transformation matrix
-function model:updateMatrix()
-    self.matrix:setTransformationMatrix(self.translation, self.rotation, self.scale)
-end
+-- function model:updateMatrix()
+--     self.matrix:setTransformationMatrix(self.translation, self.rotation, self.scale)
+-- end
 
 ---Draw the model with a shader program.
----@param shader love.Shader? If omitted, use the shader stored in the model instance
-function model:draw(shader)
-    local shader = shader or self.shader
+---@param modelMatrix (LoveExt.G3D.Matrix|love.Transform) Defines where in world space the model should be drawn
+---@param shader love.Shader? If omitted, use the default 3D shader
+function model:draw(modelMatrix, shader)
+    shader = shader or model.default_shader
     love.graphics.setShader(shader)
-    shader:send("modelMatrix", self.matrix)
+    shader:send("modelMatrix", modelMatrix)
     shader:send("viewMatrix", camera.viewMatrix)
     shader:send("projectionMatrix", camera.projectionMatrix)
     if shader:hasUniform "isCanvasEnabled" then
@@ -234,7 +231,6 @@ if success then
             datapointer[dataindex].b  = (vert[11] or 1)*255
             datapointer[dataindex].a  = (vert[12] or 1)*255
         end
-
         self.mesh:release()
         self.mesh = love.graphics.newMesh(self.vertexFormat, #self.verts, "triangles")
         self.mesh:setVertices(data)
@@ -243,24 +239,26 @@ if success then
     end
 end
 
-function model:rayIntersection(src_x, src_y, src_z, dir_x, dir_y, dir_z)
-    return collisions.rayIntersection(self.verts, self, src_x, src_y, src_z, dir_x, dir_y, dir_z)
-end
+-- collision functions are broken since models no longer store their transform
 
-function model:isPointInside(x, y, z)
-    return collisions.isPointInside(self.verts, self, x, y, z)
-end
+-- function model:rayIntersection(src_x, src_y, src_z, dir_x, dir_y, dir_z)
+--     return collisions.rayIntersection(self.verts, self, src_x, src_y, src_z, dir_x, dir_y, dir_z)
+-- end
 
-function model:sphereIntersection(src_x, src_y, src_z, radius)
-    return collisions.sphereIntersection(self.verts, self, src_x, src_y, src_z, radius)
-end
+-- function model:isPointInside(x, y, z)
+--     return collisions.isPointInside(self.verts, self, x, y, z)
+-- end
 
-function model:closestPoint(src_x, src_y, src_z)
-    return collisions.closestPoint(self.verts, self, src_x, src_y, src_z)
-end
+-- function model:sphereIntersection(src_x, src_y, src_z, radius)
+--     return collisions.sphereIntersection(self.verts, self, src_x, src_y, src_z, radius)
+-- end
 
-function model:capsuleIntersection(tip_x, tip_y, tip_z, base_x, base_y, base_z, radius)
-    return collisions.capsuleIntersection(self.verts, self, tip_x, tip_y, tip_z, base_x, base_y, base_z, radius)
-end
+-- function model:closestPoint(src_x, src_y, src_z)
+--     return collisions.closestPoint(self.verts, self, src_x, src_y, src_z)
+-- end
+
+-- function model:capsuleIntersection(tip_x, tip_y, tip_z, base_x, base_y, base_z, radius)
+--     return collisions.capsuleIntersection(self.verts, self, tip_x, tip_y, tip_z, base_x, base_y, base_z, radius)
+-- end
 
 return model

@@ -323,25 +323,27 @@ end
 ----------------------------------------------------------------------------------------------------
 -- these functions apply the collision test functions on the given list of triangles
 
--- runs a given intersection function on all of the triangles made up of a given vert table
-local function findClosest(self, verts, func, ...)
+-- Runs a given intersection function on all of the triangles made up of a given vert table
+---@param x number?
+---@param y number?
+---@param z number?
+---@param scale_x number?
+---@param scale_y number?
+---@param scale_z number?
+---@param verts table
+---@param func function
+---@param ... unknown
+---@return number finalLength, number where_x, number where_y, number where_z, number norm_x, number norm_y, number norm_z
+local function findClosest(x, y, z, scale_x, scale_y, scale_z, verts, func, ...)
+    x = x or 0
+    y = y or 0
+    z = z or 0
+    scale_x = scale_x or 1
+    scale_y = scale_y or 1
+    scale_z = scale_z or 1
+
     -- declare the variables that will be returned by the function
     local finalLength, where_x, where_y, where_z, norm_x, norm_y, norm_z
-
-    -- cache references to this model's properties for efficiency
-    local translation_x, translation_y, translation_z, scale_x, scale_y, scale_z = 0, 0, 0, 1, 1, 1
-    if self then
-        if self.translation then
-            translation_x = self.translation[1]
-            translation_y = self.translation[2]
-            translation_z = self.translation[3]
-        end
-        if self.scale then
-            scale_x = self.scale[1]
-            scale_y = self.scale[2]
-            scale_z = self.scale[3]
-        end
-    end
 
     for v=1, #verts, 3 do
         -- apply the function given with the arguments given
@@ -353,15 +355,15 @@ local function findClosest(self, verts, func, ...)
         )
 
         local length, wx,wy,wz, nx,ny,nz = func(
-            verts[v][1]*scale_x + translation_x,
-            verts[v][2]*scale_y + translation_y,
-            verts[v][3]*scale_z + translation_z,
-            verts[v+1][1]*scale_x + translation_x,
-            verts[v+1][2]*scale_y + translation_y,
-            verts[v+1][3]*scale_z + translation_z,
-            verts[v+2][1]*scale_x + translation_x,
-            verts[v+2][2]*scale_y + translation_y,
-            verts[v+2][3]*scale_z + translation_z,
+            verts[v][1]*scale_x + x,
+            verts[v][2]*scale_y + y,
+            verts[v][3]*scale_z + z,
+            verts[v+1][1]*scale_x + x,
+            verts[v+1][2]*scale_y + y,
+            verts[v+1][3]*scale_z + z,
+            verts[v+2][1]*scale_x + x,
+            verts[v+2][2]*scale_y + y,
+            verts[v+2][3]*scale_z + z,
             n_x,
             n_y,
             n_z,
@@ -391,22 +393,24 @@ local function findClosest(self, verts, func, ...)
     return finalLength, where_x, where_y, where_z, norm_x, norm_y, norm_z
 end
 
--- runs a given intersection function on all of the triangles made up of a given vert table
-local function findAny(self, verts, func, ...)
-    -- cache references to this model's properties for efficiency
-    local translation_x, translation_y, translation_z, scale_x, scale_y, scale_z = 0, 0, 0, 1, 1, 1
-    if self then
-        if self.translation then
-            translation_x = self.translation[1]
-            translation_y = self.translation[2]
-            translation_z = self.translation[3]
-        end
-        if self.scale then
-            scale_x = self.scale[1]
-            scale_y = self.scale[2]
-            scale_z = self.scale[3]
-        end
-    end
+---Runs a given intersection function on all of the triangles made up of a given vert table
+---@param x number?
+---@param y number?
+---@param z number?
+---@param scale_x number?
+---@param scale_y number?
+---@param scale_z number?
+---@param verts table
+---@param func function
+---@param ... unknown
+---@return boolean hit
+local function findAny(x, y, z, scale_x, scale_y, scale_z, verts, func, ...)
+    x = x or 0
+    y = y or 0
+    z = z or 0
+    scale_x = scale_x or 1
+    scale_y = scale_y or 1
+    scale_z = scale_z or 1
 
     for v=1, #verts, 3 do
         -- apply the function given with the arguments given
@@ -418,15 +422,15 @@ local function findAny(self, verts, func, ...)
         )
 
         local length = func(
-            verts[v][1]*scale_x + translation_x,
-            verts[v][2]*scale_y + translation_y,
-            verts[v][3]*scale_z + translation_z,
-            verts[v+1][1]*scale_x + translation_x,
-            verts[v+1][2]*scale_y + translation_y,
-            verts[v+1][3]*scale_z + translation_z,
-            verts[v+2][1]*scale_x + translation_x,
-            verts[v+2][2]*scale_y + translation_y,
-            verts[v+2][3]*scale_z + translation_z,
+            verts[v][1]*scale_x + x,
+            verts[v][2]*scale_y + y,
+            verts[v][3]*scale_z + z,
+            verts[v+1][1]*scale_x + x,
+            verts[v+1][2]*scale_y + y,
+            verts[v+1][3]*scale_z + z,
+            verts[v+2][1]*scale_x + x,
+            verts[v+2][2]*scale_y + y,
+            verts[v+2][3]*scale_z + z,
             n_x,
             n_y,
             n_z,
@@ -446,23 +450,91 @@ end
 -- collision functions that apply on lists of vertices
 ----------------------------------------------------------------------------------------------------
 
-function collisions.rayIntersection(verts, transform, src_x, src_y, src_z, dir_x, dir_y, dir_z)
-    return findClosest(transform, verts, triangleRay, src_x, src_y, src_z, dir_x, dir_y, dir_z)
+---Performs a ray intersection on every triangle in the verts list.
+---@param x number? default 0
+---@param y number? default 0
+---@param z number? default 0
+---@param scale_x number? default 1
+---@param scale_y number? default 1
+---@param scale_z number? default 1
+---@param verts table
+---@param src_x number
+---@param src_y number
+---@param src_z number
+---@param dir_x number
+---@param dir_y number
+---@param dir_z number
+---@return number finalLength, number where_x, number where_y, number where_z, number norm_x, number norm_y, number norm_z
+function collisions.rayIntersection(x, y, z, scale_x, scale_y, scale_z, verts, src_x, src_y, src_z, dir_x, dir_y, dir_z)
+    return findClosest(x, y, z, scale_x, scale_y, scale_z, verts, triangleRay, src_x, src_y, src_z, dir_x, dir_y, dir_z)
 end
 
-function collisions.isPointInside(verts, transform, x, y, z)
-    return findAny(transform, verts, triangleRay, x, y, z, 0, 0, 1)
+---Checks if a point is inside the model.
+---@param x number? model x
+---@param y number? model y
+---@param z number? model z
+---@param scale_x number?
+---@param scale_y number?
+---@param scale_z number?
+---@param verts table
+---@param px number point x
+---@param py number point y
+---@param pz number poiny z
+---@return boolean isInside
+function collisions.isPointInside(x, y, z, scale_x, scale_y, scale_z, verts, px, py, pz)
+    return findAny(x, y, z, scale_x, scale_y, scale_z, verts, triangleRay, px, py, pz, 0, 0, 1)
 end
 
-function collisions.sphereIntersection(verts, transform, src_x, src_y, src_z, radius)
-    return findClosest(transform, verts, triangleSphere, src_x, src_y, src_z, radius)
+---Checks if a sphere at a given position and size intersects this model.
+---@param x number?
+---@param y number?
+---@param z number?
+---@param scale_x number?
+---@param scale_y number?
+---@param scale_z number?
+---@param verts table
+---@param src_x number
+---@param src_y number
+---@param src_z number
+---@param radius number
+---@return number distance, number where_x, number where_y, number where_z, number norm_x, number norm_y, number norm_z
+function collisions.sphereIntersection(x, y, z, scale_x, scale_y, scale_z, verts, src_x, src_y, src_z, radius)
+    return findClosest(x, y, z, scale_x, scale_y, scale_z, verts, triangleSphere, src_x, src_y, src_z, radius)
 end
 
-function collisions.closestPoint(verts, transform, src_x, src_y, src_z)
-    return findClosest(transform, verts, trianglePoint, src_x, src_y, src_z)
+---Finds the closest point to the source point on the model's surface.
+---@param x number?
+---@param y number?
+---@param z number?
+---@param scale_x number?
+---@param scale_y number?
+---@param scale_z number?
+---@param verts table
+---@param src_x number
+---@param src_y number
+---@param src_z number
+---@return number distance, number where_x, number where_y, number where_z, number norm_x, number norm_y, number norm_z
+function collisions.closestPoint(x, y, z, scale_x, scale_y, scale_z, verts, src_x, src_y, src_z)
+    return findClosest(x, y, z, scale_x, scale_y, scale_z, verts, trianglePoint, src_x, src_y, src_z)
 end
 
-function collisions.capsuleIntersection(verts, transform, tip_x, tip_y, tip_z, base_x, base_y, base_z, radius)
+---Intersection test between model and capsule.
+---@param x number?
+---@param y number?
+---@param z number?
+---@param scale_x number?
+---@param scale_y number?
+---@param scale_z number?
+---@param verts table
+---@param tip_x number
+---@param tip_y number
+---@param tip_z number
+---@param base_x number
+---@param base_y number
+---@param base_z number
+---@param radius number
+---@return number distance, number where_x, number where_y, number where_z, number norm_x, number norm_y, number norm_z
+function collisions.capsuleIntersection(x, y, z, scale_x, scale_y, scale_z, verts, tip_x, tip_y, tip_z, base_x, base_y, base_z, radius)
     -- the normal vector coming out the tip of the capsule
     local norm_x, norm_y, norm_z = vectorNormalize(tip_x - base_x, tip_y - base_y, tip_z - base_z)
 
@@ -472,7 +544,7 @@ function collisions.capsuleIntersection(verts, transform, tip_x, tip_y, tip_z, b
     local b_x, b_y, b_z = tip_x - norm_x*radius, tip_y - norm_y*radius, tip_z - norm_z*radius
 
     return findClosest(
-        transform,
+        x, y, z, scale_x, scale_y, scale_z,
         verts,
         triangleCapsule,
         tip_x, tip_y, tip_z,
